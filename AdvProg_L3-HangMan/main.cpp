@@ -1,56 +1,52 @@
-#include <iostream>
-#include <string>
-#include <vector>
+#include "hangman.h"
+#include <cstdlib>
 #include <ctime>
-#include <stdexcept>
 #include <algorithm>
 
-#include "hangman.h"
-#include "draw.h"
+int generateRandomNumber(const int min, const int max) {
+    return min + rand() % (max - min + 1);
+}
 
-int main()
-{
-    srand((int)time(0));
+bool isCharInWord(const char ch, const std::string& word) {
+    return word.find(ch) != std::string::npos;
+}
 
-    string vocabularyFile = "data/Ogden_Picturable_200.txt";
-    //string vocabularyFile = "data/ErrorOpenFileTest.txt";
-    //string vocabularyFile = "data/EmptyTest.txt";
-    vector<string> wordList;
-    try {
-        wordList = readWordListFromFile(vocabularyFile);
-    } catch (domain_error) {
-        cout << endl << "Error: in reading vocabulary file: " << vocabularyFile << endl;
-        return 1;
+std::string generateHiddenCharacters(std::string secretWord) {
+    return std::string(secretWord.length(), '-');
+}
+
+std::string chooseWordFromList(const std::vector<std::string>& wordList, int index) {
+    if (index >= 0 && index < wordList.size()) {
+        return wordList[index];
     }
+    return "";
+}
 
-    int index = generateRandomNumber(0, wordList.size()-1);
-    string word = chooseWordFromList(wordList, index);
-
-    if (word.empty()) {
-        cout << "Error: Coud not choose a random word." << endl;
-        return 1;
+void updateSecretWord(std::string& secretWord, const char ch, const std::string& word) {
+    for (size_t i = 0; i < word.length(); ++i) {
+        if (word[i] == ch) {
+            secretWord[i] = ch;
+        }
     }
-    //cout << "Chosen word: " << word << endl;
-    // string secretWord(word.length(), '-');
-    string secretWord = generateHiddenCharacters(word);
+}
 
-    int incorrectGuess = 0;
-    string correctChars = "";
-    string incorrectChars = "";
-    
-    printScreen(word, secretWord, correctChars, incorrectGuess, incorrectChars); 
-    
-    do {
-        char ch = getInputCharacter();
+void updateEnteredChars(const char ch, std::string& chars) {
+    if (chars.find(ch) == std::string::npos) {
+        chars += ch;
+    }
+}
 
-        processData(ch, word, secretWord, 
-                    correctChars, incorrectGuess, incorrectChars);
-        
-        printScreen(word, secretWord, correctChars, incorrectGuess, incorrectChars); 
+void updateIncorrectGuess(int& incorrectGuess) {
+    ++incorrectGuess;
+}
 
-    } while (secretWord != word && incorrectGuess != MAX_MISTAKES-1);
-
-    playAnimation(word, secretWord, correctChars, incorrectGuess, incorrectChars);
-
-    return 0;
+void processData(const char ch, const std::string& word, std::string& secretWord,
+                 std::string& correctChars, int& incorrectGuess, std::string& incorrectChars) {
+    if (isCharInWord(ch, word)) {
+        updateSecretWord(secretWord, ch, word);
+        updateEnteredChars(ch, correctChars);
+    } else {
+        updateIncorrectGuess(incorrectGuess);
+        updateEnteredChars(ch, incorrectChars);
+    }
 }
